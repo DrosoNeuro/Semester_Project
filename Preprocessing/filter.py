@@ -66,7 +66,6 @@ def gzworker(fullpath, strip="True"):
     tweet_buffer = []
     try:
         with gzip.open(fullpath, 'rb') as infile:
-            print("got in")
             decoded = io.TextIOWrapper(infile, encoding='utf8')
             if _line.strip() != "":
                 json_data = _line.split('|', 1)[1][:-1]
