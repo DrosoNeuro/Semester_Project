@@ -43,7 +43,7 @@ def ensure_output_paths_exist():
 def run_all(path):
     """This will allow to run all the directories from a path"""
 
-    file_paths = glob.glob(path+"/*/*.gz")
+    file_paths = glob.glob(path+"/*.gz")
     # Based on the current tweet storage mechanism (from Todd's code)
     ensure_output_paths_exist()
 
@@ -66,6 +66,7 @@ def gzworker(fullpath, strip="True"):
     tweet_buffer = []
     try:
         with gzip.open(fullpath, 'rb') as infile:
+            print("got in")
             decoded = io.TextIOWrapper(infile, encoding='utf8')
             if _line.strip() != "":
                 json_data = _line.split('|', 1)[1][:-1]
@@ -73,7 +74,7 @@ def gzworker(fullpath, strip="True"):
                 result = tweet_select(json.loads(json_data))
 
                 if result != None:
-                    tweet_buffer.append
+                    tweet_buffer.append(result)
 
     except:
         print("Error in {}".format(fullpath))
@@ -81,9 +82,9 @@ def gzworker(fullpath, strip="True"):
 
     #Write to OUTPUT_DIRECTORY (if _buffer has contents)
     if len(tweet_buffer) > 0:
-        OUTPUT_PATH = "%s/%s.json" % (OUTPUT_DIRECTORY, str(uuid.uuid4()))
-        with open(OUTPUT_PATH, "w", errors='ignore') as fp:
-            fp.write(json.dumps(_buffer))
+        OUTPUT_PATH = "%s/%s.csv" % (OUTPUT_DIRECTORY, str(uuid.uuid4()))
+        with open(OUTPUT_PATH, "w", errors='ignore') as csvfile:
+            csv.writer(csvfile).writerow(tweet_buffer)
 
     print('Finished {}'.format(fullpath))
 
@@ -106,7 +107,7 @@ def tweet_select(tweet_obj):
         tweet_coordinates = tweet_obj["coordinates"]["coordinates"]
         tweet_type = "geo"
         return [tweet_id,tweet_date,tweet_text,tweet_coordinates,tweet_type]
-    else return None
+    else: return None
 
 ##############################################################################
 ###################### Filter Function #######################################
