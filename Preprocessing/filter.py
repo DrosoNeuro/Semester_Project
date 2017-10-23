@@ -14,6 +14,7 @@ import multiprocessing as mp
 import glob
 import uuid
 import configparser
+import numpy
 
 ##############################################################################
 ################### Configurable Params ######################################
@@ -65,25 +66,31 @@ def gzworker(fullpath, strip="True"):
     print('Processing {}'.format(fullpath))
     tweet_buffer = []
     try:
-        with gzip.open(fullpath, 'rb') as infile:
+        with gzip.open(str(fullpath), 'rb') as infile:
+            print('in')
             decoded = io.TextIOWrapper(infile, encoding='utf8')
-            if _line.strip() != "":
-                json_data = _line.split('|', 1)[1][:-1]
+            print('decoded')
+            for _line in decoded:
+                if _line.strip() != "":
+                    print('new tweet_obj')
+                    json_data = _line.split('|', 1)[1][:-1]
 
-                result = tweet_select(json.loads(json_data))
-
-                if result != None:
-                    tweet_buffer.append(result)
+                    result = tweet_select(json.loads(json_data))
+                    print(result)
+                    if result:
+                        tweet_buffer.append(result)
 
     except:
         print("Error in {}".format(fullpath))
         pass
 
     #Write to OUTPUT_DIRECTORY (if _buffer has contents)
-    if len(tweet_buffer) > 0:
-        OUTPUT_PATH = "%s/%s.csv" % (OUTPUT_DIRECTORY, str(uuid.uuid4()))
-        with open(OUTPUT_PATH, "w", errors='ignore') as csvfile:
-            csv.writer(csvfile).writerow(tweet_buffer)
+    #if tweet_buffer != None:
+        #OUTPUT_PATH = "%s/%s.csv" % (OUTPUT_DIRECTORY, str(uuid.uuid4()))
+        #with open(OUTPUT_PATH, "rw", errors='ignore') as csvfile:
+        #    writer = csv.writer(csvfile)
+        #    for row in tweet_buffer:
+        #        writer.writerow(row)
 
     print('Finished {}'.format(fullpath))
 
@@ -92,21 +99,37 @@ def gzworker(fullpath, strip="True"):
 ###################### Select Function #######################################
 ##############################################################################
 def tweet_select(tweet_obj):
-    if "coordinates" is not null:
+    print('tweet_select')
+    if tweet_obj["coordinates"] is not null:
+        print('coordinates')
         tweet_id = tweet_obj["id"]
         tweet_date = tweet_obj["created_at"]
         tweet_text = tweet_obj["text"]
         tweet_coordinates = tweet_obj["coordinates"]["coordinates"]
         tweet_type = "coordinates"
-        return [tweet_id,tweet_date,tweet_text,tweet_coordinates,tweet_type]
-    elif "geo" is not null:
+
+    elif tweet_obj["geo"] is not null:
+        print('geo')
         tweet_id = tweet_obj["id"]
         tweet_date = tweet_obj["created_at"]
         tweet_text = tweet_obj["text"]
-        tweet_coordinates = tweet_obj["coordinates"]["coordinates"]
+        tweet_coordinates = tweet_obj["geo"]["coordinates"]
         tweet_type = "geo"
+
+    elif "place" in tweet_obj:
+        print('place')
+        tweet_id = tweet_obj["id"]
+        tweet_date = tweet_obj["created_at"]
+        tweet_text = tweet_obj["text"]
+        tweet_coordinates = tweet_obj["place"]["coordinates"]
+        tweet_type = "place"
+
+    try:
         return [tweet_id,tweet_date,tweet_text,tweet_coordinates,tweet_type]
-    else: return None
+    except:
+        return None
+        pass
+
 
 ##############################################################################
 ###################### Filter Function #######################################
