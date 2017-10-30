@@ -8,13 +8,11 @@ import json
 import re
 import string
 import sys
-from pandas.io.json import json_normalize
-import pandas
 import multiprocessing as mp
 import glob
 import uuid
 import configparser
-import numpy
+import csv
 
 ##############################################################################
 ################### Configurable Params ######################################
@@ -23,8 +21,8 @@ import numpy
 Config = configparser.ConfigParser()
 Config.read("config.ini")
 
-NUM_OF_PROCESSES = 8
-OUTPUT_DIRECTORY = "Dump"
+NUM_OF_PROCESSES = 30
+OUTPUT_DIRECTORY = "../../mount/SDF/Dump"
 STRIP = True
 
 
@@ -44,7 +42,7 @@ def ensure_output_paths_exist():
 def run_all(path):
     """This will allow to run all the directories from a path"""
 
-    file_paths = glob.glob(path+"/*.gz")
+    file_paths = glob.glob(path+"/*/*.gz")
     # Based on the current tweet storage mechanism (from Todd's code)
     ensure_output_paths_exist()
 
@@ -67,16 +65,12 @@ def gzworker(fullpath, strip="True"):
     tweet_buffer = []
     try:
         with gzip.open(str(fullpath), 'rb') as infile:
-            print('in')
             decoded = io.TextIOWrapper(infile, encoding='utf8')
-            print('decoded')
             for _line in decoded:
                 if _line.strip() != "":
-                    print('new tweet_obj')
                     json_data = _line.split('|', 1)[1][:-1]
 
                     result = tweet_select(json.loads(json_data))
-                    print(result)
                     if result:
                         tweet_buffer.append(result)
 
@@ -85,12 +79,14 @@ def gzworker(fullpath, strip="True"):
         pass
 
     #Write to OUTPUT_DIRECTORY (if _buffer has contents)
-    #if tweet_buffer != None:
-        #OUTPUT_PATH = "%s/%s.csv" % (OUTPUT_DIRECTORY, str(uuid.uuid4()))
-        #with open(OUTPUT_PATH, "rw", errors='ignore') as csvfile:
-        #    writer = csv.writer(csvfile)
-        #    for row in tweet_buffer:
-        #        writer.writerow(row)
+    if tweet_buffer != None:
+        print("going to save")
+        OUTPUT_PATH = "%s/%s.csv" % (OUTPUT_DIRECTORY, fullpath[50:-3])
+
+        with open(OUTPUT_PATH, "w", errors='ignore') as csvfile:
+           writer = csv.writer(csvfile)
+           for row in tweet_buffer:
+               writer.writerow(row)
 
     print('Finished {}'.format(fullpath))
 
@@ -99,17 +95,14 @@ def gzworker(fullpath, strip="True"):
 ###################### Select Function #######################################
 ##############################################################################
 def tweet_select(tweet_obj):
-    print('tweet_select')
-    if tweet_obj["coordinates"] is not null:
-        print('coordinates')
+    if tweet_obj["coordinates"] is not None:
         tweet_id = tweet_obj["id"]
         tweet_date = tweet_obj["created_at"]
         tweet_text = tweet_obj["text"]
         tweet_coordinates = tweet_obj["coordinates"]["coordinates"]
         tweet_type = "coordinates"
 
-    elif tweet_obj["geo"] is not null:
-        print('geo')
+    elif tweet_obj["geo"] is not None:
         tweet_id = tweet_obj["id"]
         tweet_date = tweet_obj["created_at"]
         tweet_text = tweet_obj["text"]
@@ -117,18 +110,20 @@ def tweet_select(tweet_obj):
         tweet_type = "geo"
 
     elif "place" in tweet_obj:
-        print('place')
         tweet_id = tweet_obj["id"]
-        tweet_date = tweet_obj["created_at"]
+        tweet_date = tweet_obj['created_at']
         tweet_text = tweet_obj["text"]
-        tweet_coordinates = tweet_obj["place"]["coordinates"]
+        tweet_coordinates = tweet_obj["place"]['bounding_box']['coordinates']
         tweet_type = "place"
 
-    try:
-        return [tweet_id,tweet_date,tweet_text,tweet_coordinates,tweet_type]
-    except:
-        return None
-        pass
+
+    big_block = []
+    big_block.append(tweet_id)
+    big_block.append(tweet_date)
+    big_block.append(tweet_text)
+    big_block.append(tweet_coordinates)
+    big_block.append(tweet_type)
+    return big_block
 
 
 ##############################################################################
