@@ -22,7 +22,7 @@ Config = configparser.ConfigParser()
 Config.read("config.ini")
 
 NUM_OF_PROCESSES = 30
-OUTPUT_DIRECTORY = "../../mount/SDF/Dump"
+OUTPUT_DIRECTORY = "Dump"
 STRIP = True
 
 
@@ -42,7 +42,7 @@ def ensure_output_paths_exist():
 def run_all(path):
     """This will allow to run all the directories from a path"""
 
-    file_paths = glob.glob(path+"/*/*.gz")
+    file_paths = glob.glob(path+"/*.gz")
     # Based on the current tweet storage mechanism (from Todd's code)
     ensure_output_paths_exist()
 
@@ -81,7 +81,7 @@ def gzworker(fullpath, strip="True"):
     #Write to OUTPUT_DIRECTORY (if _buffer has contents)
     if tweet_buffer != None:
         print("going to save")
-        OUTPUT_PATH = "%s/%s.csv" % (OUTPUT_DIRECTORY, fullpath[50:-3])
+        OUTPUT_PATH = "%s/%s.csv" % (OUTPUT_DIRECTORY, fullpath[5:-3])
 
         with open(OUTPUT_PATH, "w", errors='ignore') as csvfile:
            writer = csv.writer(csvfile)
