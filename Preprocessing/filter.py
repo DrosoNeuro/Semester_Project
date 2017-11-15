@@ -13,7 +13,6 @@ import multiprocessing as mp
 import multiprocessing.pool
 import glob
 import uuid
-import configparser
 import csv
 
 mx_ca_us_state_abbrev = {
@@ -87,12 +86,9 @@ mx_ca_us_state_abbrev = {
 ##############################################################################
 ################### Configurable Params ######################################
 ##############################################################################
-#See config.ini
-Config = configparser.ConfigParser()
-Config.read("config.ini")
 
 NUM_OF_PROCESSES = 30
-OUTPUT_DIRECTORY = "Dump"
+OUTPUT_DIRECTORY = "../../mount/SDF/Dump"
 STRIP = True
 
 
@@ -112,14 +108,14 @@ def ensure_output_paths_exist():
 def run_all(path):
     """This will allow to run all the directories from a path"""
 
-    file_paths = glob.glob(path+"/*.gz")
+    file_paths = glob.glob(path+"/*/*.gz")
     # Based on the current tweet storage mechanism (from Todd's code)
     ensure_output_paths_exist()
 
     # If NUM_OF_PROCESSES is False, use mp.cpu_count
     pool = multiprocessing.pool.ThreadPool(NUM_OF_PROCESSES or mp.cpu_count())
 
-    pool.starmap(gzworker, zip(file_paths, repeat(STRIP)), chunksize=1)
+    pool.map(gzworker, file_paths, chunksize=1)
 
     pool.close()
 
@@ -129,7 +125,7 @@ def run_all(path):
 ###################### Worker Function #######################################
 ##############################################################################
 
-def gzworker(fullpath, strip="True"):
+def gzworker(fullpath):
     """Worker opens one .gz file"""
     print('Processing {}'.format(fullpath))
     tweet_buffer = []
@@ -144,19 +140,18 @@ def gzworker(fullpath, strip="True"):
                     if result:
                         tweet_buffer.append(result)
 
+        #Write to OUTPUT_DIRECTORY (if _buffer has contents)
+        if tweet_buffer != None:
+            print("going to save")
+            OUTPUT_PATH = "%s/%s.csv" % (OUTPUT_DIRECTORY, fullpath[50:-3])
+
+            with open(OUTPUT_PATH, "w", errors='ignore') as csvfile:
+               writer = csv.writer(csvfile)
+               for row in tweet_buffer:
+                   writer.writerow(row)
     except:
         print("Error in {}".format(fullpath))
         pass
-
-    #Write to OUTPUT_DIRECTORY (if _buffer has contents)
-    if tweet_buffer != None:
-        print("going to save")
-        OUTPUT_PATH = "%s/%s.csv" % (OUTPUT_DIRECTORY, fullpath[5:-3])
-
-        with open(OUTPUT_PATH, "w", errors='ignore') as csvfile:
-           writer = csv.writer(csvfile)
-           for row in tweet_buffer:
-               writer.writerow(row)
 
     print('Finished {}'.format(fullpath))
 
@@ -201,6 +196,7 @@ def tweet_select(tweet_obj):
     big_block.append(tweet_coordinates)
     big_block.append(tweet_type)
     big_block.append(state_num)
+
     return big_block
 
 
