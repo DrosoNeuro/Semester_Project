@@ -87,9 +87,8 @@ mx_ca_us_state_abbrev = {
 ################### Configurable Params ######################################
 ##############################################################################
 
-NUM_OF_PROCESSES = 30
+NUM_OF_PROCESSES = mp.cpu_count()-2
 OUTPUT_DIRECTORY = "../../mount/SDF/Dump"
-STRIP = True
 
 
 def ensure_output_paths_exist():
@@ -135,7 +134,6 @@ def gzworker(fullpath):
             for _line in decoded:
                 if _line.strip() != "":
                     json_data = _line.split('|', 1)[1][:-1]
-
                     result = tweet_select(json.loads(json_data))
                     if result:
                         tweet_buffer.append(result)
@@ -181,10 +179,9 @@ def tweet_select(tweet_obj):
         tweet_coordinates = tweet_obj["place"]['bounding_box']['coordinates']
         tweet_type = "place"
 
-    geoloc = tweet_coordinates.split(',')
+    geoloc = str(tweet_coordinates).split(',')
     lon = geoloc[0].replace('[', '')
     lat = geoloc[1].replace(']', '').replace(' ', '')
-
     coordinates = (lat,lon)
     results = rg.search(coordinates) # default mode = 2
     state_num = mx_ca_us_state_abbrev.get(results[0].get('admin1'))
