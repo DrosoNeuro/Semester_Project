@@ -87,8 +87,10 @@ mx_ca_us_state_abbrev = {
 ################### Configurable Params ######################################
 ##############################################################################
 
-NUM_OF_PROCESSES = mp.cpu_count()-2
+NUM_OF_PROCESSES = 10
+# NUM_OF_PROCESSES = 2
 OUTPUT_DIRECTORY = "../../mount/SDF/Dump"
+# OUTPUT_DIRECTORY = "Dump"
 
 
 def ensure_output_paths_exist():
@@ -142,6 +144,7 @@ def gzworker(fullpath):
         if tweet_buffer != None:
             print("going to save")
             OUTPUT_PATH = "%s/%s.csv" % (OUTPUT_DIRECTORY, fullpath[50:-3])
+            # OUTPUT_PATH = "%s/%s.csv" % (OUTPUT_DIRECTORY, fullpath[5:-3])
 
             with open(OUTPUT_PATH, "w", errors='ignore') as csvfile:
                writer = csv.writer(csvfile)
