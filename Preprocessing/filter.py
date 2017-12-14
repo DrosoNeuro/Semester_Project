@@ -87,7 +87,7 @@ mx_ca_us_state_abbrev = {
 ################### Configurable Params ######################################
 ##############################################################################
 
-NUM_OF_PROCESSES = 10
+NUM_OF_PROCESSES = 1
 # NUM_OF_PROCESSES = 2
 OUTPUT_DIRECTORY = "../../mount/SDF/Dump"
 # OUTPUT_DIRECTORY = "Dump"
