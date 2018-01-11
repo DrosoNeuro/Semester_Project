@@ -129,8 +129,10 @@ class Localizer:
 
     def make_map(self, top):
         self.df = pd.DataFrame(columns=self.locations)
+        self.df_tfidf = pd.DataFrame(columns=self.locations)
         for n, state in enumerate(self.locations):
             self.df[state] = top_feats_in_doc(self.X, self.features, n, top)['feature']
+            self.df_tfidf[state] = top_feats_in_doc(self.X, self.features, n, top)['tfidf']
 
     def search_for(self, sentence, top=10):
         translator = str.maketrans('','', string.punctuation)
@@ -140,7 +142,20 @@ class Localizer:
             results.append((state,sum(self.df[state].str.match('|'.join(sentence.lower().split())))))
         return sorted(results,key=lambda x: x[1], reverse=True)[:top]
 
+    def search_for_tf_idf(self, sentence, top=10):
+        translator = str.maketrans('','', string.punctuation)
+        sentence = sentence.translate(translator)
+        results = []
+        for state in self.locations:
+            booleans = self.df[state].str.match('|'.join(sentence.lower().split()))
+            results.append((state,sum(self.df_tfidf[state][booleans])))
+        return sorted(results,key=lambda x: x[1], reverse=True)[:top]
+
     def score(self, sentence, correct_value, top=10):
+        res_list = [x[0] for x in self.search_for(sentence, top)]
+        return correct_value in res_list
+
+    def score_tfidf(self, sentence, correct_value, top=10):
         res_list = [x[0] for x in self.search_for(sentence, top)]
         return correct_value in res_list
 
@@ -154,4 +169,5 @@ if __name__ == "__main__":
     L.vectorizer()
     L.make_map(25)
     print(L.search_for("Alabama, my home, my state"))
+    print(L.search_for_tf_idf("Alabama, my home, my state"))
     print(L.score('Alabama my home', 'Alabama'))
