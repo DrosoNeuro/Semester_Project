@@ -103,4 +103,8 @@ ENV/
 # mypy
 .mypy_cache/
 
+#pickle files
+*.pkl
+*.txt
+
 Dump
