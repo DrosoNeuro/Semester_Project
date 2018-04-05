@@ -87,19 +87,17 @@ mx_ca_us_state_abbrev = {
 ################### Configurable Params ######################################
 ##############################################################################
 
-NUM_OF_PROCESSES = 1
+NUM_OF_PROCESSES = False
 # NUM_OF_PROCESSES = 2
-OUTPUT_DIRECTORY = "../../mount/SDF/Dump"
-# OUTPUT_DIRECTORY = "Dump"
+#OUTPUT_DIRECTORY = "../../mount/SDF/Dump"
+#OUTPUT_DIRECTORY = "Dump"
+OUTPUT_DIRECTORY = "../../../../mount/SDF/TweetDumpInclUser"
 
 
 def ensure_output_paths_exist():
     # ensure OUTPUT_DIRECTORY exists
-    try:
-        os.mkdir(OUTPUT_DIRECTORY)
-    except:
-        #TODO: Use the correct exception here
-        pass
+    if not os.path.exists(OUTPUT_DIRECTORY):
+        os.makedirs(OUTPUT_DIRECTORY)
 
 
 ##############################################################################
@@ -108,17 +106,18 @@ def ensure_output_paths_exist():
 
 def run_all(path):
     """This will allow to run all the directories from a path"""
-
-    file_paths = glob.glob(path+"/*/*.gz")
+    #file_paths = glob.glob(path+"/*/*.gz")
+    file_paths = glob.glob(path+"/*.gz")
     # Based on the current tweet storage mechanism (from Todd's code)
     ensure_output_paths_exist()
 
     # If NUM_OF_PROCESSES is False, use mp.cpu_count
-    pool = multiprocessing.pool.ThreadPool(NUM_OF_PROCESSES or mp.cpu_count())
+    pool = multiprocessing.pool.ThreadPool(NUM_OF_PROCESSES or mp.cpu_count()-2)
 
     pool.map(gzworker, file_paths, chunksize=1)
 
     pool.close()
+
 
 
 
@@ -130,6 +129,8 @@ def gzworker(fullpath):
     """Worker opens one .gz file"""
     print('Processing {}'.format(fullpath))
     tweet_buffer = []
+    save_name = re.findall('(tweets.*\d{4}-\d{2}-\d{2}_\d{2})',fullpath)
+    save_name = save_name[0]
     try:
         with gzip.open(str(fullpath), 'rb') as infile:
             decoded = io.TextIOWrapper(infile, encoding='utf8')
@@ -143,7 +144,9 @@ def gzworker(fullpath):
         #Write to OUTPUT_DIRECTORY (if _buffer has contents)
         if tweet_buffer != None:
             print("going to save")
-            OUTPUT_PATH = "%s/%s.csv" % (OUTPUT_DIRECTORY, fullpath[50:-3])
+            #OUTPUT_PATH = "%s/%s.csv" % (OUTPUT_DIRECTORY, fullpath[50:-3])
+            OUTPUT_PATH = "%s/%s.csv" % (OUTPUT_DIRECTORY, save_name)
+            print(OUTPUT_PATH)
             # OUTPUT_PATH = "%s/%s.csv" % (OUTPUT_DIRECTORY, fullpath[5:-3])
 
             with open(OUTPUT_PATH, "w", errors='ignore') as csvfile:
@@ -163,6 +166,7 @@ def gzworker(fullpath):
 def tweet_select(tweet_obj):
     if tweet_obj["coordinates"] is not None:
         tweet_id = tweet_obj["id"]
+        user_id = tweet_obj["user"]["id_str"]
         tweet_date = tweet_obj["created_at"]
         tweet_text = tweet_obj["text"]
         tweet_coordinates = tweet_obj["coordinates"]["coordinates"]
@@ -170,32 +174,35 @@ def tweet_select(tweet_obj):
 
     elif tweet_obj["geo"] is not None:
         tweet_id = tweet_obj["id"]
+        user_id = tweet_obj["user"]["id_str"]
         tweet_date = tweet_obj["created_at"]
-        tweet_text = tweet_obj["text"]
+        tweet_text = tweet_obj["text"]["user"]["id_str"]
         tweet_coordinates = tweet_obj["geo"]["coordinates"]
         tweet_type = "geo"
 
     elif "place" in tweet_obj:
         tweet_id = tweet_obj["id"]
+        user_id = tweet_obj["user"]["id_str"]
         tweet_date = tweet_obj['created_at']
         tweet_text = tweet_obj["text"]
         tweet_coordinates = tweet_obj["place"]['bounding_box']['coordinates']
         tweet_type = "place"
 
-    geoloc = str(tweet_coordinates).split(',')
-    lon = geoloc[0].replace('[', '')
-    lat = geoloc[1].replace(']', '').replace(' ', '')
-    coordinates = (lat,lon)
-    results = rg.search(coordinates) # default mode = 2
-    state_num = mx_ca_us_state_abbrev.get(results[0].get('admin1'))
+    #geoloc = str(tweet_coordinates).split(',')
+    #lon = geoloc[0].replace('[', '')
+    #lat = geoloc[1].replace(']', '').replace(' ', '')
+    #coordinates = (lat,lon)
+    #results = rg.search(coordinates) # default mode = 2
+    #state_num = mx_ca_us_state_abbrev.get(results[0].get('admin1'))
 
     big_block = []
     big_block.append(tweet_id)
+    big_block.append(user_id)
     big_block.append(tweet_date)
     big_block.append(tweet_text)
     big_block.append(tweet_coordinates)
     big_block.append(tweet_type)
-    big_block.append(state_num)
+    #big_block.append(state_num)
 
     return big_block
 
